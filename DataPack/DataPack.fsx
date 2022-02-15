@@ -1,5 +1,5 @@
 #nowarn "760"
-#load "../Excel/Excel.fsx"
+#load "../Scripts/Excel.fsx"
 #r "nuget: EPPlus, 5.8.5"
 #r "nuget: Spectre.Console, 0.43.0"
 #r "nuget: DocumentFormat.OpenXml, 2.15.0"

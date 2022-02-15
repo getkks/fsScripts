@@ -814,6 +814,6 @@ _site
 #Coverage
 Coverage*
 
-Zip Files
+#Zip Files
 
-.zip
+*.zip
