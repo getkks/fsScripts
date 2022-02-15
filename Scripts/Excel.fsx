@@ -1,4 +1,4 @@
-#load "../Folder/Folder.fsx"
+#load "../Scripts/Folder.fsx"
 #time "on"
 
 open System.IO
