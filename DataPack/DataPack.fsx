@@ -1,7 +1,8 @@
 #nowarn "760"
-
+#load "../Scripts/Excel.fsx"
 #r "nuget: EPPlus, 5.8.5"
 #r "nuget: Spectre.Console, 0.43.0"
+#r "nuget: DocumentFormat.OpenXml, 2.15.0"
 
 open System
 open System.IO
@@ -17,20 +18,15 @@ defaultOutputFormat.TextQualifier <- '"'
 
 let prependCheckMark str = Emoji.Known.CheckMark + " " + str
 
-let rangeToZipFile (range: ExcelRangeBase) fileName (zipFile: ZipArchive) =
-    use writer =
-        zipFile
-            .CreateEntry(fileName, System.IO.Compression.CompressionLevel.Fastest)
-            .Open()
+let rangeToZipFile (range : ExcelRangeBase) fileName (zipFile : ZipArchive) =
+    use writer = zipFile.CreateEntry(fileName, System.IO.Compression.CompressionLevel.Fastest).Open()
 
     range.SaveToText(writer, defaultOutputFormat)
 
-let packFile (ctx: LiveDisplayContext) (root: Tree) fileName =
-    use outFile =
-        new FileStream(Path.ChangeExtension(fileName, "zip"), FileMode.Create)
+let packFile (ctx : LiveDisplayContext) (root : Tree) fileName =
+    use outFile = new FileStream(Path.ChangeExtension(fileName, "zip"), FileMode.Create)
 
-    use zipFile =
-        new ZipArchive(outFile, ZipArchiveMode.Create)
+    use zipFile = new ZipArchive(outFile, ZipArchiveMode.Create)
 
     if String.Equals(fileName |> Path.GetExtension, ".csv", StringComparison.OrdinalIgnoreCase) then
         zipFile.CreateEntryFromFile(
@@ -45,7 +41,9 @@ let packFile (ctx: LiveDisplayContext) (root: Tree) fileName =
 
         for sheet in excelFile.Workbook.Worksheets do
             let sheetNode =
-                sheet.Name + " <-> " + sheet.Dimension.Address
+                sheet.Name
+                + " <-> "
+                + sheet.Dimension.Address
                 |> prependCheckMark
                 |> root.AddNode
 
@@ -54,7 +52,9 @@ let packFile (ctx: LiveDisplayContext) (root: Tree) fileName =
                 |> rangeToZipFile sheet.Cells.[sheet.Dimension.Address] (sheet.Name + ".csv")
             else
                 for table in sheet.Tables do
-                    table.Name + " <-> " + table.Address.Address
+                    table.Name
+                    + " <-> "
+                    + table.Address.Address
                     |> prependCheckMark
                     |> sheetNode.AddNode
                     |> ignore
@@ -63,3 +63,12 @@ let packFile (ctx: LiveDisplayContext) (root: Tree) fileName =
                     |> rangeToZipFile table.Range (table.Name + ".csv")
 
             ctx.Refresh()
+
+fsi.CommandLineArgs
+|> Array.tail
+|> Array.head
+|> Excel.excelFiles
+|> Seq.iter (fun file ->
+    let tree = file.FullName |> Tree
+    (tree |> AnsiConsole.Live).Start(fun ctx -> file.FullName |> packFile ctx tree)
+)
