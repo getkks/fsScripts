@@ -22,39 +22,39 @@ let private folder =
     |> Array.tail
     |> Array.head
 
-let treeNode name (range : CellRangeAddress) sheetNode =
-    $"{name} - [cyan3]{range.FormatAsString()}[/]"
+let treeNode name (range : CellRangeAddress option) sheetNode =
+    if range.IsNone then
+        name
+    else
+        $"{name} - [cyan3]{range.Value.FormatAsString()}[/]"
     |> sheetNode.AddNode
 
 let rec writeCellR (writer : StreamWriter) (cell : ICell) (cellType : CellType) =
-    match cell with
-    | null -> ()
-    | _ ->
-        match cellType with
-        | CellType.Blank
-        | CellType.Error -> ()
-        | CellType.Formula -> writeCellR writer cell cell.CachedFormulaResultType
-        | CellType.Boolean -> writer.Write(cell.BooleanCellValue)
-        | CellType.String ->
-            let mutable value = cell.StringCellValue
+    match cellType with
+    | CellType.Blank
+    | CellType.Error -> ()
+    | CellType.Formula -> writeCellR writer cell cell.CachedFormulaResultType
+    | CellType.Boolean -> writer.Write(cell.BooleanCellValue)
+    | CellType.String ->
+        let mutable value = cell.StringCellValue
 
-            if value.IndexOfAny([| ',' ; '"' |]) <> -1 then
-                value <-
-                    "\""
-                    + value.Replace("\"", "\"\"")
-                    + "\""
+        if value.IndexOfAny([| ',' ; '"' |]) <> -1 then
+            value <-
+                "\""
+                + value.Replace("\"", "\"\"")
+                + "\""
 
-            writer.Write(value)
-        | _ -> writer.Write(cell)
+        writer.Write(value)
+    | _ -> writer.Write(cell)
 
 let writeCell (writer : StreamWriter) (cell : ICell) = writeCellR writer cell cell.CellType
 
-let rangeToZipFileNPOI (sheet : ISheet) (range : CellRangeAddress) fileName (zipFile : ZipArchive) =
+let rangeToZipFileNPOI (sheet : ISheet) (range : CellRangeAddress option) fileName (zipFile : ZipArchive) =
     use file = zipFile.CreateEntry(fileName, System.IO.Compression.CompressionLevel.Fastest).Open()
     use writer = StreamWriter(file, Encoding.UTF8)
 
     match range with
-    | null ->
+    | None ->
         let loopCells (row : IRow) =
             use cellEnumerator = row.GetEnumerator()
 
@@ -77,7 +77,7 @@ let rangeToZipFileNPOI (sheet : ISheet) (range : CellRangeAddress) fileName (zip
                 writer.WriteLine()
                 loopCells (rowEnumerator.Current :?> IRow)
 
-    | _ ->
+    | Some range ->
         let loopCells (row : IRow) =
             range.FirstColumn
             |> row.GetCell
@@ -120,6 +120,7 @@ let pack (root : TreeNode) fileName =
                      |> int)
                     - 1
                 )
+                |> Some
 
             let sheetNode = treeNode sheet.SheetName range root
 
@@ -130,6 +131,7 @@ let pack (root : TreeNode) fileName =
                 for table in tables do
                     let range =
                         CellRangeAddress(table.StartRowIndex, table.EndRowIndex, table.StartColIndex, table.EndColIndex)
+                        |> Some
 
                     treeNode table.Name range sheetNode
                     |> ignore
