@@ -817,3 +817,7 @@ Coverage*
 #Zip Files
 
 *.zip
+
+#HTML Logs
+
+/Sample Data/*.html

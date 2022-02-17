@@ -1,5 +1,4 @@
 #load "./Folder.fsx"
-#time "on"
 
 open System.IO
 open System.Linq
