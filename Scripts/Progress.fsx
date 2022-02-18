@@ -10,9 +10,9 @@ progress.HideCompleted <- false
 progress.Columns(
     [| TaskDescriptionColumn() :> ProgressColumn
        ProgressBarColumn()
+       SpinnerColumn(Spinner.Known.Ascii)
        PercentageColumn()
-       ElapsedTimeColumn()
-       SpinnerColumn(Spinner.Known.Ascii) |]
+       ElapsedTimeColumn() |]
 )
 
 let progressBar taskName orignialState stateMangement callback closing data =

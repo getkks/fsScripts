@@ -3,7 +3,7 @@
 open System.IO
 open System.Linq
 
-let excelFileExtensions = [| ".xlsx" ; ".xlsm" ; ".csv" |].ToHashSet()
+let excelFileExtensions = [| ".xls" ; ".xlsb" ; ".xlsx" ; ".xlsm" ; ".csv" |].ToHashSet()
 
 let excelFiles folderName =
     folderName
